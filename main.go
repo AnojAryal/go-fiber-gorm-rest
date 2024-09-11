@@ -3,8 +3,14 @@ package main
 import (
 	"log"
 
+	"github.com/anojaryal/fiber-api/initializers"
 	"github.com/gofiber/fiber/v2"
 )
+
+func init() {
+	initializers.ConnectToDB()
+
+}
 
 func welcome(c *fiber.Ctx) error {
 	return c.SendString("welcome")
