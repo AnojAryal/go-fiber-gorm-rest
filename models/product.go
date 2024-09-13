@@ -6,5 +6,5 @@ type Product struct {
 	ID           uint `json:"id" gorm:"primarykey"`
 	CreatedAt    time.Time
 	Name         string `json:"name"`
-	SerialNumber string `json :"serialnumber"`
+	SerialNumber string `json:"serialnumber"`
 }
