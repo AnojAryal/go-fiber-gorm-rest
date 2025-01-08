@@ -6,32 +6,54 @@ import (
 	"github.com/anojaryal/fiber-api/initializers"
 	"github.com/anojaryal/fiber-api/models"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	//this is not the model User see this as the serializer
+	// see this as the serializer
 	ID        uint   `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
 func CreateResponseUser(userModel models.User) User {
-	return User{ID: userModel.ID, FirstName: userModel.FirstName, LastName: userModel.LastName}
+	return User{
+		ID:        userModel.ID,
+		FirstName: userModel.FirstName,
+		LastName:  userModel.LastName,
+		Email:     userModel.Email,
+		Password:  userModel.Password,
+	}
 }
 
 func CreateUser(c *fiber.Ctx) error {
 	var user models.User
 
+	// Parse the request body into the user model
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(400).JSON(err.Error)
+		return c.Status(400).JSON("Failed to parse request body")
 	}
 
-	initializers.DB.Create(&user)
-	responseUser := CreateResponseUser(user)
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(400).JSON("Failed to hash password")
+	}
 
+	// Update the user model's password field with the hashed password
+	user.Password = string(hashedPassword)
+
+	if result := initializers.DB.Create(&user); result.Error != nil {
+		return c.Status(500).JSON("Failed to create user")
+	}
+
+	responseUser := CreateResponseUser(user)
 	return c.Status(201).JSON(responseUser)
 }
 
+// Get all users
 func GetUser(c *fiber.Ctx) error {
 	users := []models.User{}
 
@@ -54,6 +76,7 @@ func findUser(id int, user *models.User) error {
 	return nil
 }
 
+// Get a single user by id
 func GetUserById(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 
@@ -70,6 +93,7 @@ func GetUserById(c *fiber.Ctx) error {
 	return c.Status(200).JSON(responseUser)
 }
 
+// Update a user
 func UpdateUser(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 
@@ -103,6 +127,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	return c.Status(200).JSON(responseUser)
 }
 
+// Delete a user
 func DeleteUser(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 
